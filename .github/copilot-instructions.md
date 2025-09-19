@@ -33,6 +33,30 @@
 - **Regular cleanup**: Review and clean attic directory periodically
 - **No accumulation**: Don't let dead code accumulate in active codebase
 
+## Accessibility (ARIA Labeling)
+
+### 🎯 Interactive Elements
+- **All interactive elements** (buttons, links, forms, dialogs) must include appropriate ARIA roles and labels
+- **Use ARIA attributes**: Implement aria-label, aria-labelledby, and aria-describedby to provide clear, descriptive information for screen readers
+- **Semantic HTML**: Use semantic HTML wherever possible to enhance accessibility
+
+### 📢 Dynamic Content
+- **Announce updates**: Ensure all dynamic content updates (modals, alerts, notifications) are announced to assistive technologies using aria-live regions
+- **Maintain tab order**: Maintain logical tab order and keyboard navigation for all features
+- **Visible focus**: Provide visible focus indicators for all interactive elements
+
+## Internationalization (I18N)
+
+### 🌍 Text and Language Support
+- **Externalize text**: All user-facing text must be externalized for translation
+- **Multiple languages**: Support multiple languages, including right-to-left (RTL) languages such as Arabic and Hebrew
+- **Language selector**: Provide a language selector for users to choose their preferred language
+
+### 🕐 Localization
+- **Format localization**: Ensure date, time, number, and currency formats are localized based on user settings
+- **UI compatibility**: Test UI layouts for text expansion and RTL compatibility
+- **Unicode support**: Use Unicode throughout to support international character sets
+
 ## Documentation Preferences
 
 ### Diagrams and Visual Documentation
@@ -58,6 +82,13 @@
 - **Simple workflows**: GitHub Actions should be thin wrappers around scripts, not contain complex logic
 - **Easy debugging**: When CI fails, developers can reproduce the issue locally by running the same script
 
+## Accessibility & Internationalization Best Practices
+
+### 🧪 Testing Guidelines
+- **Screen reader testing**: Regularly test with screen readers (NVDA, JAWS, VoiceOver) and keyboard-only navigation
+- **Accessibility validation**: Validate ARIA attributes using accessibility tools and browser extensions
+- **Localization collaboration**: Collaborate with localization teams to ensure accurate translations and cultural appropriateness
+- **Documentation**: Document all accessibility and internationalization features for future development and QA
 
 ## Quick Reference
 
@@ -67,6 +98,8 @@
 - [ ] **Naming**: Self-documenting function/variable names?
 - [ ] **Size**: Functions small and focused?
 - [ ] **Dead Code**: Removed or archived appropriately?
+- [ ] **Accessibility**: ARIA labels and semantic HTML implemented?
+- [ ] **I18N**: User-facing text externalized for translation?
 
 ### Before Committing
 1. Run tests: `npm test`
@@ -74,3 +107,5 @@
 3. Verify DRY: Look for duplicated logic
 4. Simplify: Can any function be made simpler?
 5. Archive/Delete: Handle any dead code appropriately
+6. Accessibility: Check ARIA labels and keyboard navigation
+7. I18N: Verify text externalization and RTL compatibility
