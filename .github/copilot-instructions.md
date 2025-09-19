@@ -82,14 +82,6 @@
 - **Simple workflows**: GitHub Actions should be thin wrappers around scripts, not contain complex logic
 - **Easy debugging**: When CI fails, developers can reproduce the issue locally by running the same script
 
-## Accessibility & Internationalization Best Practices
-
-### 🧪 Testing Guidelines
-- **Screen reader testing**: Regularly test with screen readers (NVDA, JAWS, VoiceOver) and keyboard-only navigation
-- **Accessibility validation**: Validate ARIA attributes using accessibility tools and browser extensions
-- **Localization collaboration**: Collaborate with localization teams to ensure accurate translations and cultural appropriateness
-- **Documentation**: Document all accessibility and internationalization features for future development and QA
-
 ## Quick Reference
 
 ### Code Quality Checklist
