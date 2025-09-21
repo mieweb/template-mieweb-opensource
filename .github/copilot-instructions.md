@@ -61,6 +61,7 @@
 
 ### Diagrams and Visual Documentation
 - **Always use Mermaid diagrams** instead of ASCII art for workflow diagrams, architecture diagrams, and flowcharts
+- **Use memorable names** instead of single letters in diagrams (e.g., `Engine`, `Auth`, `Server` instead of `A`, `B`, `C`)
 - Use appropriate Mermaid diagram types:
   - `graph TB` or `graph LR` for workflow architectures 
   - `flowchart TD` for process flows
