@@ -1,5 +1,7 @@
 ## Code Quality Principles
 
+<!-- https://github.com/mieweb/template-mieweb-opensource/blob/main/.github/copilot-instructions.md -->
+
 ### 🎯 DRY (Don't Repeat Yourself)
 - **Never duplicate code**: If you find yourself copying code, extract it into a reusable function
 - **Single source of truth**: Each piece of knowledge should have one authoritative representation
