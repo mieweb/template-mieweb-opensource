@@ -87,15 +87,6 @@
 
 ## Quick Reference
 
-### Code Quality Checklist
-- [ ] **DRY**: No code duplication - extracted reusable functions?
-- [ ] **KISS**: Simplest solution that works?
-- [ ] **Naming**: Self-documenting function/variable names?
-- [ ] **Size**: Functions small and focused?
-- [ ] **Dead Code**: Removed or archived appropriately?
-- [ ] **Accessibility**: ARIA labels and semantic HTML implemented?
-- [ ] **I18N**: User-facing text externalized for translation?
-
 ### 🪶 All Changes should be considered for Pull Request Philosophy
 
 * **Smallest viable change**: Always make the smallest change that fully solves the problem.
@@ -104,11 +95,14 @@
 * **Isolated improvements**: If a change grows complex, extract it into a new function, module, or component instead of modifying multiple areas.
 * **Direct requests only**: Large refactors or architectural shifts should only occur when explicitly requested.
 
-### Before Committing
-1. Run tests: `npm test`
-2. Check for unused code: Review imports and functions
-3. Verify DRY: Look for duplicated logic
-4. Simplify: Can any function be made simpler?
-5. Archive/Delete: Handle any dead code appropriately
-6. Accessibility: Check ARIA labels and keyboard navigation
-7. I18N: Verify text externalization and RTL compatibility
+### Code Quality Checklist
+- [ ] **DRY**: No code duplication - extracted reusable functions?
+- [ ] **KISS**: Simplest solution that works?
+- [ ] **Minimal Changes**: Smallest viable change made for PR?
+- [ ] **Naming**: Self-documenting function/variable names?
+- [ ] **Size**: Functions small and focused?
+- [ ] **Dead Code**: Removed or archived appropriately?
+- [ ] **Accessibility**: ARIA labels and semantic HTML implemented?
+- [ ] **I18N**: User-facing text externalized for translation?
+- [ ] **Lint**: Run linter if appropriate
+- [ ] **Test**: Run tests
