@@ -35,6 +35,11 @@
 - **Regular cleanup**: Review and clean attic directory periodically
 - **No accumulation**: Don't let dead code accumulate in active codebase
 
+## HTML & CSS Guidelines
+- **Semantic Naming**: Every `<div>` and other structural element must use a meaningful, semantic class name that clearly indicates its purpose or role within the layout.
+- **CSS Simplicity**: Styles should avoid global resets or overrides that affect unrelated components or default browser behavior. Keep changes scoped and minimal.
+- **SASS-First Approach**: All styles should be written in SASS (SCSS) whenever possible. Each component should have its own dedicated SASS file to promote modularity and maintainability.
+
 ## Accessibility (ARIA Labeling)
 
 ### 🎯 Interactive Elements
