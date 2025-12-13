@@ -35,6 +35,12 @@
 - **Regular cleanup**: Review and clean attic directory periodically
 - **No accumulation**: Don't let dead code accumulate in active codebase
 
+### 🌐 Testing with MCP Browser
+- Use MCP browser in Playwright if available to test functionality
+- **Never close the browser** after running MCP browser commands unless explicitly asked
+- Let the user interact with the browser after navigation or testing
+- Only use `browser_close` when the user specifically requests it
+
 ## HTML & CSS Guidelines
 - **Semantic Naming**: Every `<div>` and other structural element must use a meaningful, semantic class name that clearly indicates its purpose or role within the layout.
 - **CSS Simplicity**: Styles should avoid global resets or overrides that affect unrelated components or default browser behavior. Keep changes scoped and minimal.
@@ -99,7 +105,7 @@
 * **No sweeping edits**: Broad refactors or multi-module changes must be split or proposed as new components.
 * **Isolated improvements**: If a change grows complex, extract it into a new function, module, or component instead of modifying multiple areas.
 * **Direct requests only**: Large refactors or architectural shifts should only occur when explicitly requested.
-
+ 
 ### Code Quality Checklist
 - [ ] **DRY**: No code duplication - extracted reusable functions?
 - [ ] **KISS**: Simplest solution that works?
