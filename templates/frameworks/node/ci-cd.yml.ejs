@@ -1,0 +1,91 @@
+name: Deploy Production - Server
+
+on:
+<% if (trigger === 'release') { %>
+  release:
+    types: [created]
+<% } else { %>
+  push:
+    branches:
+      - main
+      - master
+<% } %>
+
+permissions:
+  contents: write
+
+jobs:
+<% if (deployServer) { %>
+  deploy-server:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+<% if (serverMethod === 'proxmox') { %>
+      - name: Build Application
+        run: |
+          npm ci
+          npm run build
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          echo "${{ secrets.DEPLOY_SSH_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+
+      - name: Deploy to Proxmox Container
+        run: |
+          # Create a tarball of the build
+          tar -czf build.tar.gz .next package.json package-lock.json public
+          
+          # SCP the build to the server
+          scp -i ~/.ssh/deploy_key -P ${{ vars.DEPLOY_PORT || '22' }} -o StrictHostKeyChecking=no build.tar.gz ${{ secrets.DEPLOY_USER }}@${{ vars.DEPLOY_HOST }}:~/Builds/new_build.tar.gz
+          
+          # SSH in to extract and restart
+          ssh -i ~/.ssh/deploy_key -p ${{ vars.DEPLOY_PORT || '22' }} -o StrictHostKeyChecking=no ${{ secrets.DEPLOY_USER }}@${{ vars.DEPLOY_HOST }} << 'DEPLOY_SCRIPT'
+            set -e
+            
+            BUILD_DIR="$HOME/Builds/build-$(date +%m-%d-%Y-%H%M%S)"
+            mkdir -p "$BUILD_DIR"
+            tar -xzf ~/Builds/new_build.tar.gz -C "$BUILD_DIR"
+            
+            cd "$BUILD_DIR"
+            npm ci --production
+            
+            ln -sfn "$BUILD_DIR" "$HOME/Builds/current"
+            sudo systemctl restart app
+          DEPLOY_SCRIPT
+<% } else if (serverMethod === 'docker') { %>
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ghcr.io/${{ github.repository }}:latest
+
+      - name: Deploy via SSH (Docker Compose)
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ vars.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            docker pull ghcr.io/${{ github.repository }}:latest
+            docker compose -f docker-compose.yml up -d
+<% } %>
+<% } %>

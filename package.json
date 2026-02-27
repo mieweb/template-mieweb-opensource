@@ -1,0 +1,30 @@
+{
+  "name": "@mieweb/opensource-ci-cd-template",
+  "version": "1.0.0",
+  "description": "1) Replace this readme with a good one.  [Working backwards](https://docs.google.com/document/d/1zxa0Rgq56xGHOgY51DbZJVUlWMRh2pbd6AupVYI9IZc) 2) use npx create to create the framework 3) Use API first thinking (no UI first)",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mieweb/template-mieweb-opensource.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/mieweb/template-mieweb-opensource/issues"
+  },
+  "homepage": "https://github.com/mieweb/template-mieweb-opensource#readme",
+  "dependencies": {
+    "chalk": "^4.1.2",
+    "ejs": "^4.0.1",
+    "fs-extra": "^11.3.3",
+    "inquirer": "^8.2.7"
+  },
+  "type": "module",
+  "bin": {
+    "opensource-ci-cd-template": "./bin/index.js"
+  }
+}

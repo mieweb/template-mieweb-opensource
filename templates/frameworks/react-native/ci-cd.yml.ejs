@@ -1,0 +1,163 @@
+name: Build and Publish Mobile Apps
+
+on:
+<% if (trigger === 'release') { %>
+  release:
+    types: [created]
+<% } else { %>
+  push:
+    branches:
+      - main
+      - master
+<% } %>
+
+jobs:
+<% if (mobileBuilds === 'android' || mobileBuilds === 'both') { %>
+  build-android:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Build Android Release
+        run: |
+          cd android
+          ./gradlew bundleRelease
+
+      - name: Sign AAB
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/release.keystore
+          jarsigner -verbose \
+            -sigalg SHA256withRSA \
+            -digestalg SHA-256 \
+            -keystore android/app/release.keystore \
+            -storepass "${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
+            -keypass "${{ secrets.ANDROID_KEY_PASSWORD }}" \
+            android/app/build/outputs/bundle/release/app-release.aab \
+            "${{ secrets.ANDROID_KEYSTORE_ALIAS }}"
+
+      - name: Upload to Google Play Store
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: ${{ vars.ANDROID_PACKAGE_NAME }}
+          releaseFiles: android/app/build/outputs/bundle/release/app-release.aab
+          track: internal
+          status: completed
+<% } %>
+
+<% if (mobileBuilds === 'ios' || mobileBuilds === 'both') { %>
+  build-ios:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Install CocoaPods
+        run: |
+          cd ios
+          pod install
+
+      - name: Install Apple Certificate & Provisioning Profile
+        env:
+          CERT_P12_BASE64: ${{ secrets.IOS_DIST_CERT_P12_BASE64 }}
+          CERT_PASSWORD: ${{ secrets.IOS_DIST_CERT_PASSWORD }}
+          PROV_PROFILE_BASE64: ${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}
+        run: |
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+          KEYCHAIN_PASSWORD=$(openssl rand -hex 16)
+
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+          CERT_PATH=$RUNNER_TEMP/certificate.p12
+          echo "$CERT_P12_BASE64" | base64 --decode > "$CERT_PATH"
+          security import "$CERT_PATH" -P "$CERT_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+          PROFILE_PATH=$RUNNER_TEMP/profile.mobileprovision
+          echo "$PROV_PROFILE_BASE64" | base64 --decode > "$PROFILE_PATH"
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          PROFILE_UUID=$(security cms -D -i "$PROFILE_PATH" | grep -A1 UUID | grep string | sed 's/.*<string>\(.*\)<\/string>/\1/')
+          cp "$PROFILE_PATH" ~/Library/MobileDevice/Provisioning\ Profiles/${PROFILE_UUID}.mobileprovision
+
+          echo "KEYCHAIN_PATH=${KEYCHAIN_PATH}" >> $GITHUB_ENV
+          echo "PROFILE_UUID=${PROFILE_UUID}" >> $GITHUB_ENV
+
+      - name: Archive iOS App
+        run: |
+          cd ios
+          WORKSPACE_PATH=$(find . -name "*.xcworkspace" -type d | head -1)
+          SCHEME="${{ vars.IOS_SCHEME_NAME }}"
+          
+          xcodebuild archive \
+            -workspace "$WORKSPACE_PATH" \
+            -scheme "$SCHEME" \
+            -configuration Release \
+            -destination "generic/platform=iOS" \
+            -archivePath $RUNNER_TEMP/App.xcarchive \
+            -allowProvisioningUpdates \
+            OTHER_CODE_SIGN_FLAGS="--keychain ${{ env.KEYCHAIN_PATH }}" \
+            CODE_SIGN_STYLE=Manual \
+            DEVELOPMENT_TEAM=${{ secrets.APPLE_TEAM_ID }} \
+            PROVISIONING_PROFILE_SPECIFIER="${{ env.PROFILE_UUID }}"
+
+      - name: Export iOS App
+        run: |
+          cat > $RUNNER_TEMP/ExportOptions.plist << EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>method</key>
+              <string>app-store-connect</string>
+              <key>provisioningProfiles</key>
+              <dict>
+                  <key>${{ vars.IOS_BUNDLE_ID }}</key>
+                  <string>${{ env.PROFILE_UUID }}</string>
+              </dict>
+          </dict>
+          </plist>
+          EOF
+
+          mkdir -p ~/private_keys
+          echo "${{ secrets.APPLE_API_KEY_P8_BASE64 }}" | base64 --decode > ~/private_keys/AuthKey_${{ secrets.APPLE_API_KEY_ID }}.p8
+
+          xcodebuild -exportArchive \
+            -archivePath $RUNNER_TEMP/App.xcarchive \
+            -exportPath $RUNNER_TEMP/export \
+            -exportOptionsPlist $RUNNER_TEMP/ExportOptions.plist \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath ~/private_keys/AuthKey_${{ secrets.APPLE_API_KEY_ID }}.p8 \
+            -authenticationKeyID ${{ secrets.APPLE_API_KEY_ID }} \
+            -authenticationKeyIssuerID ${{ secrets.APPLE_API_ISSUER_ID }}
+
+      - name: Upload to TestFlight
+        run: |
+          xcrun altool --upload-app -f $RUNNER_TEMP/export/*.ipa -t ios --apiKey ${{ secrets.APPLE_API_KEY_ID }} --apiIssuer ${{ secrets.APPLE_API_ISSUER_ID }}
+<% } %>
