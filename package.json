@@ -1,0 +1,28 @@
+{
+  "name": "@mieweb/template-apply",
+  "version": "1.0.0",
+  "description": "Apply MIE Web template files (copilot-instructions, .gitignore, etc.) to an existing project",
+  "type": "module",
+  "bin": {
+    "template-apply": "bin/apply-template.mjs"
+  },
+  "files": [
+    "bin/"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "mieweb",
+    "template",
+    "copilot",
+    "copilot-instructions",
+    "scaffold"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mieweb/template-mieweb-opensource.git"
+  },
+  "license": "MIT",
+  "author": "MIE Web"
+}
