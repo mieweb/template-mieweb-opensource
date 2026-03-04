@@ -50,3 +50,17 @@ Edit the `TEMPLATE_FILES` array in:
 2. Replace this README with your own — consider [Working Backwards](https://docs.google.com/document/d/1zxa0Rgq56xGHOgY51DbZJVUlWMRh2pbd6AupVYI9IZc)
 3. Use `npx create` to scaffold your framework
 4. Use API-first thinking (no UI-first)
+
+## MIE Web UI (HTML projects only)
+
+If your project is an **HTML project with a UI**, consider using the [MIE Web UI component library](https://ui.mieweb.org/):
+
+```bash
+npm install @mieweb/ui
+# or
+yarn add @mieweb/ui
+# or
+pnpm add @mieweb/ui
+```
+
+> **Note:** This only applies to HTML/UI projects. If your project is Python, a pure API, or another non-UI stack, skip this step.
