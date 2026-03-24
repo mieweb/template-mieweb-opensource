@@ -19,7 +19,13 @@ Go to your repository on GitHub, navigate to **Settings > Secrets and variables 
 <% } %>
 <% if (mobileBuilds === 'ios' || mobileBuilds === 'both') { %>
 *   `IOS_BUNDLE_ID`: Your iOS bundle ID (e.g., `com.company.app`).
+<% if (!useFastlane) { %>
 *   `IOS_SCHEME_NAME`: Your Xcode scheme name (usually your app name).
+<% } %>
+<% if (useFastlane) { %>
+*   `MATCH_GIT_URL`: The HTTPS URL of your private signing repo (e.g., `https://github.com/my-org/mobile-signing.git`).
+*   `MATCH_GIT_BRANCH`: The branch in your signing repo for this app's profiles (e.g., `main`).
+<% } %>
 <% } %>
 
 ### Secrets (Sensitive)
@@ -101,11 +107,30 @@ To publish to TestFlight or the App Store, you need an Apple Developer account (
 *   Save it as a `.p12` file and specify a strong password. Add this password as the `IOS_DIST_CERT_PASSWORD` secret.
 *   Base64 encode the `.p12` file (Mac: `base64 -i file.p12 | pbcopy`) and paste it into `IOS_DIST_CERT_P12_BASE64`.
 
+<% if (!useFastlane) { %>
 **2. Create an App ID and Provisioning Profile (`IOS_PROVISIONING_PROFILE_BASE64`):**
 *   In the Developer Portal, go to **Identifiers** and create an App ID matching your `IOS_BUNDLE_ID` (e.g., `com.company.app`).
 *   Go to **Profiles**, click `+`, select **App Store** (under Distribution), select your App ID, and select the Distribution Certificate you just created.
 *   Download the `.mobileprovision` file.
 *   Base64 encode it (Mac: `base64 -i file.mobileprovision | pbcopy`) and paste it into `IOS_PROVISIONING_PROFILE_BASE64`.
+<% } %>
+
+<% if (useFastlane) { %>
+**2. Set Up Fastlane Match (Provisioning Profiles):**
+
+Match stores your provisioning profiles in a private Git repository and manages them automatically. This eliminates the need for manually exporting and base64-encoding provisioning profiles.
+
+*   Create a **private GitHub repo** for signing (e.g., `my-org/mobile-signing`). This is where match will store encrypted certificates and profiles.
+*   Run `fastlane match init` locally and choose "git" storage. It will create a `Matchfile` pointing to this repo.
+*   Run `fastlane match appstore` to generate (or import) an App Store provisioning profile. Match will ask for a passphrase the first time — save this as `MATCH_PASSWORD`.
+*   For CI access to the private signing repo, create a **Personal Access Token (PAT)** with `repo` scope, base64-encode it as `username:token`, and save as `MATCH_GIT_BASIC_AUTHORIZATION`:
+    ```bash
+    echo -n "your-github-username:ghp_yourtoken" | base64
+    ```
+
+> **Why do we still need `IOS_DIST_CERT_P12_BASE64`?**
+> macOS 15+ has a known bug where the system `security import` command rejects `.p12` files that were re-encrypted by match with an empty password. The Fastfile includes a workaround that imports your original password-protected `.p12` directly, bypassing this issue. Match still manages your provisioning profiles without any problems.
+<% } %>
 
 **3. Generate an App Store Connect API Key (`APPLE_API_KEY_P8_BASE64`):**
 *   Log in to [App Store Connect](https://appstoreconnect.apple.com/).
@@ -116,6 +141,21 @@ To publish to TestFlight or the App Store, you need an Apple Developer account (
 *   Download the `.p8` file. You can only download this once!
 *   Base64 encode the `.p8` file (Mac: `base64 -i AuthKey_XXX.p8 | pbcopy`) and paste it into `APPLE_API_KEY_P8_BASE64`.
 *   Find your Team ID in the Developer Portal (usually a 10-character string like `ABC123DEFG`) and save it as `APPLE_TEAM_ID`.
+
+<% if (useFastlane) { %>
+**Summary of iOS Secrets (Fastlane + Match):**
+
+| Secret | Description |
+|---|---|
+| `APPLE_TEAM_ID` | Your 10-character Apple Developer Team ID |
+| `APPLE_API_KEY_ID` | Key ID from App Store Connect API |
+| `APPLE_API_ISSUER_ID` | Issuer ID from App Store Connect API |
+| `APPLE_API_KEY_P8_BASE64` | Base64-encoded `.p8` API key file |
+| `IOS_DIST_CERT_P12_BASE64` | Base64-encoded distribution certificate `.p12` |
+| `IOS_DIST_CERT_PASSWORD` | Password for the `.p12` certificate |
+| `MATCH_PASSWORD` | Passphrase used to encrypt the match signing repo |
+| `MATCH_GIT_BASIC_AUTHORIZATION` | Base64-encoded `username:PAT` for private signing repo access |
+<% } %>
 <% } %>
 
 <% if (framework === 'meteor' && mobileBuilds !== 'none') { %>

@@ -1,0 +1,6 @@
+# Fastlane
+vendor/bundle/
+.bundle/
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/logs/

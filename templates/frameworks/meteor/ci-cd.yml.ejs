@@ -132,6 +132,17 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
+<% if (useFastlane) { %>
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+          bundler-cache: true
+
+      - name: Install Ruby gems
+        run: bundle install
+<% } %>
+
       - name: Install Meteor
         run: |
           curl https://install.meteor.com/ | sh
@@ -154,6 +165,24 @@ jobs:
       - name: Decode Keystore
         run: echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > release-key.jks
 
+<% if (useFastlane) { %>
+      - name: Sign and publish Android AAB with Fastlane
+        env:
+          ANDROID_KS_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KS_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+        run: |
+          bundle exec fastlane android publish \
+            aab_search_root:"android-build" \
+            output_aab_path:"app-release-signed.aab" \
+            keystore_path:"release-key.jks" \
+            keystore_password:"$ANDROID_KS_PASSWORD" \
+            key_password:"$ANDROID_KS_KEY_PASSWORD" \
+            keystore_alias:"${{ secrets.ANDROID_KEYSTORE_ALIAS }}" \
+            package_name:"${{ vars.ANDROID_PACKAGE_NAME }}" \
+            version_name:"v${{ github.event.release.tag_name || github.sha }}" \
+            track:"internal"
+<% } else { %>
       - name: Sign AAB
         run: |
           UNSIGNED_AAB=$(find android-build -name "*.aab" -type f | head -1)
@@ -179,6 +208,7 @@ jobs:
           track: internal
           status: completed
 <% } %>
+<% } %>
 
 <% if (mobileBuilds === 'ios' || mobileBuilds === 'both') { %>
   build-and-publish-ios:
@@ -191,6 +221,17 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+
+<% if (useFastlane) { %>
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+          bundler-cache: true
+
+      - name: Install Ruby gems
+        run: bundle install
+<% } %>
 
       - name: Install Meteor
         run: |
@@ -211,6 +252,48 @@ jobs:
             --platforms ios \
             --server=${{ vars.SERVER_URL }}
 
+<% if (useFastlane) { %>
+      - name: Decode App Store Connect API key
+        run: |
+          mkdir -p ~/private_keys
+          echo "${{ secrets.APPLE_API_KEY_P8_BASE64 }}" | base64 --decode > ~/private_keys/AuthKey_${{ secrets.APPLE_API_KEY_ID }}.p8
+
+      - name: Decode distribution certificate
+        env:
+          IOS_DIST_CERT_P12_BASE64: ${{ secrets.IOS_DIST_CERT_P12_BASE64 }}
+        run: |
+          CERT_PATH="$RUNNER_TEMP/distribution.p12"
+          echo "$IOS_DIST_CERT_P12_BASE64" | base64 --decode > "$CERT_PATH"
+          echo "IOS_DIST_CERT_P12_PATH=$CERT_PATH" >> $GITHUB_ENV
+
+      - name: Archive and upload iOS with Fastlane
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          IOS_APP_IDENTIFIER: ${{ vars.IOS_BUNDLE_ID }}
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
+          MATCH_GIT_URL: ${{ vars.MATCH_GIT_URL }}
+          MATCH_GIT_BRANCH: ${{ vars.MATCH_GIT_BRANCH }}
+          IOS_DIST_CERT_PASSWORD: ${{ secrets.IOS_DIST_CERT_PASSWORD }}
+        run: |
+          bundle exec fastlane ios publish \
+            workspace_root:"ios-build" \
+            team_id:"${{ secrets.APPLE_TEAM_ID }}" \
+            bundle_id:"${{ vars.IOS_BUNDLE_ID }}" \
+            api_key_id:"${{ secrets.APPLE_API_KEY_ID }}" \
+            api_issuer_id:"${{ secrets.APPLE_API_ISSUER_ID }}" \
+            api_key_path:"$HOME/private_keys/AuthKey_${{ secrets.APPLE_API_KEY_ID }}.p8"
+
+      - name: Upload iOS build logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-build-logs
+          path: |
+            fastlane/logs/**
+            ~/Library/Logs/gym/**
+          if-no-files-found: warn
+<% } else { %>
       - name: Install Apple Certificate & Provisioning Profile
         env:
           CERT_P12_BASE64: ${{ secrets.IOS_DIST_CERT_P12_BASE64 }}
@@ -288,4 +371,5 @@ jobs:
       - name: Upload to TestFlight
         run: |
           xcrun altool --upload-app -f $RUNNER_TEMP/export/*.ipa -t ios --apiKey ${{ secrets.APPLE_API_KEY_ID }} --apiIssuer ${{ secrets.APPLE_API_ISSUER_ID }}
+<% } %>
 <% } %>

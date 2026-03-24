@@ -63,12 +63,20 @@ async function run() {
         { name: 'None', value: 'none' }
       ],
       when: (answers) => answers.framework === 'meteor' || answers.framework === 'react-native'
+    },
+    {
+      type: 'confirm',
+      name: 'useFastlane',
+      message: 'Use Fastlane for mobile build & signing? (Recommended — handles code signing, match, and publishing)',
+      default: true,
+      when: (answers) => answers.mobileBuilds && answers.mobileBuilds !== 'none'
     }
   ]);
 
   // Normalize answers for templates
   if (answers.framework === 'node') answers.mobileBuilds = 'none';
   if (answers.framework === 'react-native') answers.deployServer = false;
+  if (!answers.useFastlane) answers.useFastlane = false;
 
   console.log(chalk.yellow('\nGenerating your advanced CI/CD pipeline...\n'));
 
@@ -115,7 +123,30 @@ async function run() {
     await renderTemplate('deployment/docker/docker-compose.yml.ejs', path.join(targetDir, 'docker-compose.yml'));
   }
 
-  // 4. Generate Setup Guide
+  // 4. Generate Fastlane files (if Fastlane)
+  if (answers.useFastlane) {
+    const fastlaneDir = path.join(targetDir, 'fastlane');
+    await fs.ensureDir(fastlaneDir);
+
+    await renderTemplate('fastlane/Gemfile.ejs', path.join(targetDir, 'Gemfile'));
+    await renderTemplate('fastlane/Appfile.ejs', path.join(fastlaneDir, 'Appfile'));
+    await renderTemplate('fastlane/Matchfile.ejs', path.join(fastlaneDir, 'Matchfile'));
+    await renderTemplate('fastlane/Fastfile.ejs', path.join(fastlaneDir, 'Fastfile'));
+
+    // Append .gitignore additions
+    const gitignorePath = path.join(targetDir, '.gitignore');
+    const additionsPath = path.join(templateDir, 'fastlane/gitignore-additions.txt');
+    if (await fs.pathExists(additionsPath)) {
+      const additions = await fs.readFile(additionsPath, 'utf-8');
+      const existing = (await fs.pathExists(gitignorePath)) ? await fs.readFile(gitignorePath, 'utf-8') : '';
+      if (!existing.includes('# Fastlane')) {
+        await fs.appendFile(gitignorePath, '\n' + additions);
+        console.log(chalk.green('✅ Appended Fastlane entries to .gitignore'));
+      }
+    }
+  }
+
+  // 5. Generate Setup Guide
   await renderTemplate('PIPELINE_SETUP.md.ejs', path.join(targetDir, 'PIPELINE_SETUP.md'));
 
   console.log(chalk.blue.bold('\n🎉 Advanced Pipeline generated successfully!'));
