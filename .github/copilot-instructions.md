@@ -225,7 +225,7 @@ Project-specific conventions (the rest of this file is generic guidance):
 * **Isolated improvements**: If a change grows complex, extract it into a new function, module, or component instead of modifying multiple areas.
 * **Direct requests only**: Large refactors or architectural shifts should only occur when explicitly requested.
 * **Update the docs**: Keep documentation in sync with the change in the same PR. When behavior, stack, or build flow changes, update the relevant docs rather than leaving them stale.
-* **Show UI changes**: Any change to the `finicky-ui` interface must update affected docs/screenshots, and the PR description must include before/after screenshots (or a short clip) of the UI.
+* **Show UI changes**: Any change to the UI must update affected docs/screenshots, and the PR description must include before/after screenshots (or a short clip) of the UI.
  
 ### Code Quality Checklist
 - [ ] **DRY**: No code duplication - extracted reusable functions?
