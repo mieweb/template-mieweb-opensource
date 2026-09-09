@@ -96,6 +96,12 @@
 - **Simple workflows**: GitHub Actions should be thin wrappers around scripts, not contain complex logic
 - **Easy debugging**: When CI fails, developers can reproduce the issue locally by running the same script
 
+## Shared Agent Skills
+
+- **Do not copy skills into this repo.** Reusable engineering skills (commit attribution, unreleased-dependency vendoring, package weight gating, …) live in the `mieweb/agent-skills` plugin marketplace and are catalogued at https://skills.mieweb.org.
+- **MIE staff**: add `"chat.plugins.marketplaces": ["mieweb/agent-skills"]` to your VS Code user settings once; the `mieweb` plugin then follows you into every repository and updates itself.
+- Repository-specific skills belong in `.github/skills/<name>/SKILL.md`, with the directory name equal to the frontmatter `name` — a mismatch makes the skill silently fail to load.
+
 ## Quick Reference
 
 ### 🪶 All Changes should be considered for Pull Request Philosophy
